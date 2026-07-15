@@ -196,10 +196,86 @@ h1 {
 }
 
 /* Table */
+.table-section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
 .table-section h2 {
     font-size: 1.15rem;
     margin-bottom: 14px;
 }
+
+/* Category filter bar */
+.filter-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.filter-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background: var(--card);
+    color: var(--text);
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+}
+.filter-chip:hover {
+    border-color: var(--accent);
+}
+.filter-chip-active {
+    color: #fff;
+    border-color: var(--accent);
+    background: var(--accent);
+}
+.filter-chip-active .category-dot {
+    box-shadow: 0 0 0 2px rgba(255,255,255,0.4);
+}
+
+.filter-total-banner {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--accent);
+    border-radius: var(--radius);
+    padding: 14px 18px;
+    margin-bottom: 16px;
+    font-size: 0.95rem;
+}
+.filter-total-amount { font-size: 1.15rem; color: var(--accent-dark); }
+.filter-total-count { color: var(--text-muted); font-size: 0.85rem; }
+.filter-clear {
+    margin-left: auto;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    text-decoration: none;
+    font-weight: 600;
+}
+.filter-clear:hover { color: var(--error-text); text-decoration: underline; }
+
+.category-row-link {
+    text-decoration: none;
+    color: inherit;
+    cursor: pointer;
+    border-radius: 6px;
+    padding: 3px 4px;
+    margin: -3px -4px 5px;
+}
+.category-row-link:hover { background: #f2f4f7; }
+.category-row-link:hover .category-name { color: var(--accent); }
 
 .table-wrap {
     background: var(--card);

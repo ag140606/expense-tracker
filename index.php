@@ -1,14 +1,40 @@
 <?php
 require_once 'config.php';
 
-// Delete flash message (from delete.php redirect)
+// Delete flash message
 $deleted = isset($_GET['deleted']);
 $added   = isset($_GET['added']);
 $updated = isset($_GET['updated']);
 
-// All expenses, most recent first
-$stmt = $pdo->query("SELECT * FROM expenses ORDER BY date DESC, id DESC");
+// Category filter
+$allCategories = ['Food', 'Transport', 'Entertainment', 'Education', 'Utilities', 'Health', 'Shopping', 'Other'];
+$selectedCategory = $_GET['category'] ?? '';
+if (!in_array($selectedCategory, $allCategories, true)) {
+    $selectedCategory = ''; 
+}
+
+// Expenses, filtered by category if one is selected
+if ($selectedCategory !== '') {
+    $stmt = $pdo->prepare("SELECT * FROM expenses WHERE category = :category ORDER BY date DESC, id DESC");
+    $stmt->execute([':category' => $selectedCategory]);
+} else {
+    $stmt = $pdo->query("SELECT * FROM expenses ORDER BY date DESC, id DESC");
+}
 $expenses = $stmt->fetchAll();
+
+// Total spent in the selected category
+$filteredCategoryTotal = null;
+$filteredCategoryCount = 0;
+if ($selectedCategory !== '') {
+    $stmt = $pdo->prepare(
+        "SELECT COALESCE(SUM(amount), 0) AS total, COUNT(*) AS count
+         FROM expenses WHERE category = :category"
+    );
+    $stmt->execute([':category' => $selectedCategory]);
+    $row = $stmt->fetch();
+    $filteredCategoryTotal = $row['total'];
+    $filteredCategoryCount = (int)$row['count'];
+}
 
 // Total spent THIS MONTH (SUM)
 $stmt = $pdo->prepare(
@@ -99,12 +125,12 @@ function catColor($cat, $map) {
                     <?php foreach ($byCategory as $row): ?>
                         <?php $pct = $monthTotal > 0 ? ($row['total'] / $monthTotal) * 100 : 0; ?>
                         <li>
-                            <div class="category-row">
+                            <a href="index.php?category=<?= urlencode($row['category']) ?>" class="category-row category-row-link">
                                 <span class="category-dot" style="background:<?= catColor($row['category'], $categoryColors) ?>"></span>
                                 <span class="category-name"><?= htmlspecialchars($row['category']) ?></span>
                                 <span class="category-count">(<?= (int)$row['count'] ?>)</span>
                                 <span class="category-amount"><?= money($row['total']) ?></span>
-                            </div>
+                            </a>
                             <div class="bar-track">
                                 <div class="bar-fill" style="width:<?= $pct ?>%; background:<?= catColor($row['category'], $categoryColors) ?>"></div>
                             </div>
@@ -116,12 +142,43 @@ function catColor($cat, $map) {
     </section>
 
     <section class="table-section">
-        <h2>All Expenses</h2>
+        <div class="table-section-header">
+            <h2>All Expenses</h2>
+        </div>
+
+        <div class="filter-bar">
+            <a href="index.php" class="filter-chip <?= $selectedCategory === '' ? 'filter-chip-active' : '' ?>">
+                All
+            </a>
+            <?php foreach ($allCategories as $cat): ?>
+                <a href="index.php?category=<?= urlencode($cat) ?>"
+                   class="filter-chip <?= $selectedCategory === $cat ? 'filter-chip-active' : '' ?>"
+                   style="<?= $selectedCategory === $cat ? 'background:' . catColor($cat, $categoryColors) . ';border-color:' . catColor($cat, $categoryColors) . ';' : '' ?>">
+                    <span class="category-dot" style="background:<?= $selectedCategory === $cat ? '#fff' : catColor($cat, $categoryColors) ?>"></span>
+                    <?= htmlspecialchars($cat) ?>
+                </a>
+            <?php endforeach; ?>
+        </div>
+
+        <?php if ($selectedCategory !== ''): ?>
+            <div class="filter-total-banner" style="border-color:<?= catColor($selectedCategory, $categoryColors) ?>">
+                <span class="category-dot" style="background:<?= catColor($selectedCategory, $categoryColors) ?>"></span>
+                Total spent on <strong><?= htmlspecialchars($selectedCategory) ?></strong>:
+                <strong class="filter-total-amount"><?= money($filteredCategoryTotal) ?></strong>
+                <span class="filter-total-count">(<?= $filteredCategoryCount ?> expense<?= $filteredCategoryCount === 1 ? '' : 's' ?>)</span>
+                <a href="index.php" class="filter-clear">Clear filter &times;</a>
+            </div>
+        <?php endif; ?>
 
         <?php if (empty($expenses)): ?>
             <div class="empty-state">
-                <p>No expenses yet.</p>
-                <a href="add.php" class="btn btn-primary">Add your first expense</a>
+                <?php if ($selectedCategory !== ''): ?>
+                    <p>No expenses in <strong><?= htmlspecialchars($selectedCategory) ?></strong> yet.</p>
+                    <a href="index.php" class="btn btn-ghost">Clear filter</a>
+                <?php else: ?>
+                    <p>No expenses yet.</p>
+                    <a href="add.php" class="btn btn-primary">Add your first expense</a>
+                <?php endif; ?>
             </div>
         <?php else: ?>
             <div class="table-wrap">
